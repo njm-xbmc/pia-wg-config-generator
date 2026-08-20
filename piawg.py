@@ -66,9 +66,8 @@ class piawg:
         cn = self.server_list[self.region]['servers']['wg'][0]['cn']
         ip = self.server_list[self.region]['servers']['wg'][0]['ip']
         
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         s = requests.Session()
         s.mount('https://', host_header_ssl.HostHeaderSSLAdapter())
         s.verify = False
