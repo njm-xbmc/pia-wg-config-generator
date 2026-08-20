@@ -2,15 +2,12 @@ from flask import Flask, render_template, request, send_file, jsonify
 import tempfile
 import os
 import logging
-import requests
 import urllib3
-import zipfile
 from piawg import piawg
-from datetime import datetime
+from protonvpn import generate_config as proton_generate, get_server_list as proton_server_list
 
 urllib3.disable_warnings()
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -19,6 +16,41 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+PROTON_CA = """-----BEGIN CERTIFICATE-----
+MIIFnTCCA4WgAwIBAgIUCI574SM3Lyh47GyNl0WAOYrqb5QwDQYJKoZIhvcNAQEL
+BQAwXjELMAkGA1UEBhMCQ0gxHzAdBgNVBAoMFlByb3RvbiBUZWNobm9sb2dpZXMg
+QUcxEjAQBgNVBAsMCVByb3RvblZQTjEaMBgGA1UEAwwRUHJvdG9uVlBOIFJvb3Qg
+Q0EwHhcNMTkxMDE3MDgwNjQxWhcNMzkxMDEyMDgwNjQxWjBeMQswCQYDVQQGEwJD
+SDEfMB0GA1UECgwWUHJvdG9uIFRlY2hub2xvZ2llcyBBRzESMBAGA1UECwwJUHJv
+dG9uVlBOMRowGAYDVQQDDBFQcm90b25WUE4gUm9vdCBDQTCCAiIwDQYJKoZIhvcN
+AQEBBQADggIPADCCAgoCggIBAMkUT7zMUS5C+NjQ7YoGpVFlfbN9HFgG4JiKfHB8
+QxnPPRgyTi0zVOAj1ImsRilauY8Ddm5dQtd8qcApoz6oCx5cFiiSQG2uyhS/59Zl
+5wqIkw1o+CgwZgeWkq04lcrxhhfPgJZRFjrYVezy/Z2Ssd18s3/FFNQ+2iV1KC2K
+z8eSPr50u+l9vEKsKiNGkJTdlWjoDKZM2C15i/h8Smi+PdJlx7WMTtYoVC1Fzq0r
+aCPDQl18kspu11b6d8ECPWghKcDIIKuA0r0nGqF1GvH1AmbC/xUaNrKgz9AfioZL
+MP/l22tVG3KKM1ku0eYHX7NzNHgkM2JKnBBannImQQBGTAcvvUlnfF3AHx4vzx7H
+ahpBz8ebThx2uv+vzu8lCVEcKjQObGwLbAONJN2enug8hwSSZQv7tz7onDQWlYh0
+El5fnkrEQGbukNnSyOqTwfobvBllIPzBqdO38eZFA0YTlH9plYjIjPjGl931lFAA
+3G9t0x7nxAauLXN5QVp1yoF1tzXc5kN0SFAasM9VtVEOSMaGHLKhF+IMyVX8h5Iu
+IRC8u5O672r7cHS+Dtx87LjxypqNhmbf1TWyLJSoh0qYhMr+BbO7+N6zKRIZPI5b
+MXc8Be2pQwbSA4ZrDvSjFC9yDXmSuZTyVo6Bqi/KCUZeaXKof68oNxVYeGowNeQd
+g/znAgMBAAGjUzBRMB0GA1UdDgQWBBR44WtTuEKCaPPUltYEHZoyhJo+4TAfBgNV
+HSMEGDAWgBR44WtTuEKCaPPUltYEHZoyhJo+4TAPBgNVHRMBAf8EBTADAQH/MA0G
+CSqGSIb3DQEBCwUAA4ICAQBBmzCQlHxOJ6izys3TVpaze+rUkA9GejgsB2DZXIcm
+4Lj/SNzQsPlZRu4S0IZV253dbE1DoWlHanw5lnXwx8iU82X7jdm/5uZOwj2NqSqT
+bTn0WLAC6khEKKe5bPTf18UOcwN82Le3AnkwcNAaBO5/TzFQVgnVedXr2g6rmpp9
+gdedeEl9acB7xqfYfkrmijqYMm+xeG2rXaanch3HjweMDuZdT/Ub5G6oir0Kowft
+lA1ytjXRg+X+yWymTpF/zGLYfSodWWjMKhpzZtRJZ+9B0pWXUyY7SuCj5T5SMIAu
+x3NQQ46wSbHRolIlwh7zD7kBgkyLe7ByLvGFKa2Vw4PuWjqYwrRbFjb2+EKAwPu6
+VTWz/QQTU8oJewGFipw94Bi61zuaPvF1qZCHgYhVojRy6KcqncX2Hx9hjfVxspBZ
+DrVH6uofCmd99GmVu+qizybWQTrPaubfc/a2jJIbXc2bRQjYj/qmjE3hTlmO3k7V
+EP6i8CLhEl+dX75aZw9StkqjdpIApYwX6XNDqVuGzfeTXXclk4N4aDPwPFM/Yo/e
+KnvlNlKbljWdMYkfx8r37aOHpchH34cv0Jb5Im+1H07ywnshXNfUhRazOpubJRHn
+bjDuBwWS1/Vwp5AJ+QHsPXhJdl3qHc1szJZVJb3VyAWvG/bWApKfFuZX18tiI4N0
+EA==
+-----END CERTIFICATE-----"""
+
+
 def sanitize_region_for_filename(region_name):
     name = region_name.lower()
     name = name.replace(' ', '-')
@@ -26,18 +58,15 @@ def sanitize_region_for_filename(region_name):
     name = '-'.join(filter(None, name.split('-')))
     return name
 
-def get_openvpn_config(region_name, protocol, server_list):
-    """Generate OpenVPN config for a given region and protocol (udp/tcp)"""
+
+def get_pia_openvpn_config(region_name, protocol, server_list):
     proto_key = 'ovpntcp' if protocol == 'tcp' else 'ovpnudp'
     port = 502 if protocol == 'tcp' else 1198
-
     servers = server_list.get(region_name, {}).get('servers', {}).get(proto_key, [])
     if not servers:
         return None, "No servers available for this region/protocol"
-
     server_ip = servers[0]['ip']
     server_cn = servers[0]['cn']
-
     config = f"""client
 dev tun
 proto {protocol}
@@ -97,26 +126,37 @@ TqOSwO1TZFV4c5eKWJl7oIrjd9gqK+Ii4Y94i9bFv8OVsONO6Q==
 """
     return config, None
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/regions')
-def get_regions():
-    """Get available PIA regions for dropdown"""
+
+@app.route('/pia/regions')
+def pia_regions():
     try:
         pia = piawg()
-        regions = list(pia.server_list.keys())
-        regions.sort()
-        logger.info(f"Retrieved {len(regions)} available regions")
+        regions = sorted(pia.server_list.keys())
+        logger.info(f"Retrieved {len(regions)} PIA regions")
         return jsonify(regions)
     except Exception as e:
-        logger.error(f"Failed to retrieve regions: {str(e)})")
+        logger.error(f"Failed to retrieve PIA regions: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/generate', methods=['POST'])
-def generate_config():
-    """Generate and download WireGuard config"""
+
+@app.route('/proton/regions')
+def proton_regions():
+    try:
+        servers = proton_server_list()
+        logger.info(f"Retrieved {len(servers)} ProtonVPN servers")
+        return jsonify(servers)
+    except Exception as e:
+        logger.error(f"Failed to retrieve ProtonVPN servers: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/pia/generate', methods=['POST'])
+def pia_generate():
     temp_file = None
     try:
         username = request.form.get('username')
@@ -125,84 +165,38 @@ def generate_config():
         config_type = request.form.get('config_type', 'wireguard')
 
         if not all([username, password, region]):
-            logger.warning("Config generation attempted with missing fields")
             return jsonify({'error': 'All fields are required'}), 400
 
         sanitized_region = sanitize_region_for_filename(region)
-
-        if config_type in ('openvpn_udp', 'openvpn_tcp'):
-            protocol = 'tcp' if config_type == 'openvpn_tcp' else 'udp'
-            pia = piawg()
-
-            if region not in pia.server_list:
-                return jsonify({'error': f'Invalid region selected: {region}'}), 400
-
-            logger.info(f"Generating OpenVPN {protocol.upper()} config for region: {region}")
-
-            config_content, error = get_openvpn_config(region, protocol, pia.server_list)
-            if error:
-                return jsonify({'error': error}), 500
-
-            # Add credentials
-            config_content += f"\n<auth-user-pass>\n{username}\n{password}\n</auth-user-pass>\n"
-
-            tunnel_name = f'PIA-{sanitized_region}-{protocol.upper()}'
-            filename = f'{tunnel_name}.ovpn'
-
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.ovpn', delete=False) as f:
-                f.write(config_content)
-                temp_file = f.name
-
-            logger.info(f"OpenVPN config generated successfully for region: {region}")
-
-            response = send_file(temp_file,
-                               as_attachment=True,
-                               download_name=filename,
-                               mimetype='text/plain')
-
-            @response.call_on_close
-            def cleanup():
-                try:
-                    if temp_file and os.path.exists(temp_file):
-                        os.unlink(temp_file)
-                except Exception as e:
-                    logger.error(f"Failed to cleanup temp file: {e}")
-
-            return response
-
-        # WireGuard config
         pia = piawg()
 
         if region not in pia.server_list:
-            logger.warning(f"Invalid region selected: {region}")
-            return jsonify({'error': f'Invalid region selected: {region}'}), 400
+            return jsonify({'error': f'Invalid region: {region}'}), 400
 
-        logger.info(f"Generating WireGuard config for region: {region}")
-
-        pia.generate_keys()
-        pia.set_region(region)
-
-        if not pia.get_token(username, password):
-            logger.warning(f"Authentication failed for user: {username}")
-            return jsonify({'error': 'Invalid credentials or authentication failed'}), 401
-
-        status, response = pia.addkey()
-        if not status:
-            logger.error(f"Failed to register key with server for region: {region}")
-            return jsonify({'error': 'Failed to register key with server'}), 500
-
-        tunnel_name = f'PIA-{sanitized_region}'
-
-        config_content = f"""[Interface]
+        if config_type in ('openvpn_udp', 'openvpn_tcp'):
+            protocol = 'tcp' if config_type == 'openvpn_tcp' else 'udp'
+            logger.info(f"Generating PIA OpenVPN {protocol.upper()} for region: {region}")
+            config_content, error = get_pia_openvpn_config(region, protocol, pia.server_list)
+            if error:
+                return jsonify({'error': error}), 500
+            config_content += f"\n<auth-user-pass>\n{username}\n{password}\n</auth-user-pass>\n"
+            tunnel_name = f'PIA-{sanitized_region}-{protocol.upper()}'
+            suffix = '.ovpn'
+        else:
+            logger.info(f"Generating PIA WireGuard config for region: {region}")
+            pia.generate_keys()
+            pia.set_region(region)
+            if not pia.get_token(username, password):
+                return jsonify({'error': 'Invalid credentials or authentication failed'}), 401
+            status, response = pia.addkey()
+            if not status:
+                return jsonify({'error': 'Failed to register key with server'}), 500
+            tunnel_name = f'PIA-{sanitized_region}'
+            config_content = f"""[Interface]
 Address = {pia.connection['peer_ip']}
 PrivateKey = {pia.privatekey}
 DNS = {pia.connection['dns_servers'][0]},{pia.connection['dns_servers'][1]}
 
-# Uncomment the below two PostUp and PreDown routing rules if routing containers through WireGuard container
-# PostUp = iptables -t nat -A POSTROUTING -o wg+ -j MASQUERADE
-# PreDown = iptables -t nat -D POSTROUTING -o wg+ -j MASQUERADE
-
-# Unraid note: leave the next line commented. Used only for naming the tunnel in Unraid
 # {tunnel_name}
 
 [Peer]
@@ -211,39 +205,81 @@ Endpoint = {pia.connection['server_ip']}:1337
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 """
+            suffix = '.conf'
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.conf', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix=suffix, delete=False) as f:
             f.write(config_content)
             temp_file = f.name
 
-        logger.info(f"WireGuard config generated successfully for region: {region}")
-
-        filename = f'{tunnel_name}.conf'
-
-        response = send_file(temp_file,
-                           as_attachment=True,
-                           download_name=filename,
-                           mimetype='text/plain')
+        filename = f'{tunnel_name}{suffix}'
+        response = send_file(temp_file, as_attachment=True, download_name=filename, mimetype='text/plain')
 
         @response.call_on_close
         def cleanup():
             try:
                 if temp_file and os.path.exists(temp_file):
                     os.unlink(temp_file)
-                    logger.debug(f"Cleaned up temp file: {temp_file}")
             except Exception as e:
-                logger.error(f"Failed to cleanup temp file {temp_file}: {str(e)}")
+                logger.error(f"Cleanup error: {e}")
 
         return response
 
     except Exception as e:
-        logger.error(f"Error generating config: {str(e)}")
+        logger.error(f"PIA generate error: {str(e)}")
         if temp_file and os.path.exists(temp_file):
             try:
                 os.unlink(temp_file)
             except Exception:
                 pass
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/proton/generate', methods=['POST'])
+def proton_generate():
+    temp_file = None
+    try:
+        username = request.form.get('username')
+        password = request.form.get('password')
+        server = request.form.get('server')
+        protocol = request.form.get('protocol', 'udp')
+
+        if not all([username, password, server]):
+            return jsonify({'error': 'All fields are required'}), 400
+
+        logger.info(f"Generating ProtonVPN {protocol.upper()} config for server: {server}")
+
+        config_content, error = proton_generate(server, protocol, username, password)
+        if error:
+            return jsonify({'error': error}), 500
+
+        sanitized = sanitize_region_for_filename(server)
+        filename = f'ProtonVPN-{sanitized}-{protocol.upper()}.ovpn'
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.ovpn', delete=False) as f:
+            f.write(config_content)
+            temp_file = f.name
+
+        response = send_file(temp_file, as_attachment=True, download_name=filename, mimetype='text/plain')
+
+        @response.call_on_close
+        def cleanup():
+            try:
+                if temp_file and os.path.exists(temp_file):
+                    os.unlink(temp_file)
+            except Exception as e:
+                logger.error(f"Cleanup error: {e}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"ProtonVPN generate error: {str(e)}")
+        if temp_file and os.path.exists(temp_file):
+            try:
+                os.unlink(temp_file)
+            except Exception:
+                pass
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
