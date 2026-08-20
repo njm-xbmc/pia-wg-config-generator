@@ -3,20 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIA VPN Config Generator</title>
+    <title>VPN Config Generator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/style.css" rel="stylesheet">
 </head>
 <body class="dark-mode">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Top Header with Controls -->
+
     <div class="top-header">
         <div class="header-controls">
-            <a href="#" class="control-btn" id="donateBtn" title="Support Development">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-            </a>
             <button class="control-btn" id="themeToggle" title="Toggle Dark/Light Mode">
                 <svg id="lightIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -28,7 +23,6 @@
         </div>
     </div>
 
-    <!-- Logo Section -->
     <div class="logo-container">
         <img src="/static/sio.png" alt="SIO" class="logo">
     </div>
@@ -36,212 +30,232 @@
     <div class="container main-container">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-center mb-0">PIA VPN Config Generator</h3>
-                    </div>
-                    <div class="card-body">
-                        <form id="configForm">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">PIA Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="password" class="form-label">PIA Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="region" class="form-label">Region</label>
-                                <select class="form-control" id="region" name="region" required>
-                                    <option value="">Loading regions...</option>
-                                </select>
-                            </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Config Type</label>
-                                <div class="d-flex gap-2">
-                                    <div class="form-check flex-fill">
-                                        <input class="form-check-input" type="radio" name="config_type" id="typeWg" value="wireguard" checked>
-                                        <label class="form-check-label" for="typeWg">WireGuard</label>
-                                    </div>
-                                    <div class="form-check flex-fill">
-                                        <input class="form-check-input" type="radio" name="config_type" id="typeUdp" value="openvpn_udp">
-                                        <label class="form-check-label" for="typeUdp">OpenVPN UDP</label>
-                                    </div>
-                                    <div class="form-check flex-fill">
-                                        <input class="form-check-input" type="radio" name="config_type" id="typeTcp" value="openvpn_tcp">
-                                        <label class="form-check-label" for="typeTcp">OpenVPN TCP</label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary" id="generateBtn">
-                                    <span id="btnText">Generate Config</span>
-                                    <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-                                </button>
-                            </div>
-                        </form>
+                <!-- Provider tabs -->
+                <ul class="nav nav-tabs mb-3" id="providerTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="pia-tab" data-bs-toggle="tab" data-bs-target="#pia" type="button">PIA</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="proton-tab" data-bs-toggle="tab" data-bs-target="#proton" type="button">ProtonVPN</button>
+                    </li>
+                </ul>
 
-                        <p class="text-center mt-3 mb-0" style="font-size: 0.9rem;">
-                            <a href="https://www.youtube.com/c/SpaceinvaderOne" target="_blank" class="text-decoration-none" style="opacity: 0.8;">
-                                Learn how to use this with Unraid Docker containers →
-                            </a>
-                        </p>
+                <div class="tab-content">
 
-                        <!-- Help Section -->
-                        <div class="help-section mt-4 p-3" style="border-radius: 8px; background-color: var(--help-bg); border: 1px solid var(--help-border);">
-                            <p class="mb-2" style="font-size: 0.9rem; line-height: 1.5;">
-                                If your chosen region doesn't connect after import, the server may be temporarily busy. Try waiting a few minutes or generate a config for a different region.
-                                <a class="text-decoration-none" data-bs-toggle="collapse" href="#helpDetails" role="button" aria-expanded="false" aria-controls="helpDetails" style="white-space: nowrap;">
-                                    [More details <span id="helpArrow">▼</span>]
-                                </a>
-                            </p>
-                            <div class="collapse" id="helpDetails">
-                                <hr style="margin: 0.75rem 0; opacity: 0.3;">
-                                <div style="font-size: 0.85rem; line-height: 1.6;">
-                                    <p class="mb-2"><strong>WireGuard</strong> — Fastest and most modern protocol. Recommended for most users.</p>
-                                    <p class="mb-2"><strong>OpenVPN UDP</strong> — Good balance of speed and reliability. Use if WireGuard isn't available on your device.</p>
-                                    <p class="mb-2"><strong>OpenVPN TCP</strong> — Most compatible. Use if UDP is blocked on your network (e.g. corporate/hotel WiFi).</p>
-                                    <p class="mb-0">Note: OpenVPN configs include your credentials embedded. Keep the file secure.</p>
-                                </div>
+                    <!-- PIA Tab -->
+                    <div class="tab-pane fade show active" id="pia">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="text-center mb-0">PIA Config Generator</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="piaForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">PIA Username</label>
+                                        <input type="text" class="form-control" name="username" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">PIA Password</label>
+                                        <input type="password" class="form-control" name="password" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Region</label>
+                                        <select class="form-control" name="region" id="piaRegion" required>
+                                            <option value="">Loading regions...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Config Type</label>
+                                        <div class="d-flex gap-2">
+                                            <div class="form-check flex-fill">
+                                                <input class="form-check-input" type="radio" name="config_type" value="wireguard" checked>
+                                                <label class="form-check-label">WireGuard</label>
+                                            </div>
+                                            <div class="form-check flex-fill">
+                                                <input class="form-check-input" type="radio" name="config_type" value="openvpn_udp">
+                                                <label class="form-check-label">OpenVPN UDP</label>
+                                            </div>
+                                            <div class="form-check flex-fill">
+                                                <input class="form-check-input" type="radio" name="config_type" value="openvpn_tcp">
+                                                <label class="form-check-label">OpenVPN TCP</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <span class="btn-text">Generate Config</span>
+                                            <span class="spinner spinner-border spinner-border-sm d-none" role="status"></span>
+                                        </button>
+                                    </div>
+                                </form>
+                                <div class="alert alert-danger mt-3 d-none pia-error"></div>
+                                <div class="alert alert-success mt-3 d-none pia-success"></div>
                             </div>
                         </div>
-
-                        <div id="error" class="alert alert-danger mt-3 d-none"></div>
-                        <div id="success" class="alert alert-success mt-3 d-none"></div>
                     </div>
+
+                    <!-- ProtonVPN Tab -->
+                    <div class="tab-pane fade" id="proton">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="text-center mb-0">ProtonVPN Config Generator</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="protonForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">ProtonVPN Username</label>
+                                        <input type="text" class="form-control" name="username" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">ProtonVPN Password</label>
+                                        <input type="password" class="form-control" name="password" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Server</label>
+                                        <select class="form-control" name="server" id="protonServer" required>
+                                            <option value="">Loading servers...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Protocol</label>
+                                        <div class="d-flex gap-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="protocol" value="udp" checked>
+                                                <label class="form-check-label">UDP (faster)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="protocol" value="tcp">
+                                                <label class="form-check-label">TCP (more compatible)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <span class="btn-text">Generate Config</span>
+                                            <span class="spinner spinner-border spinner-border-sm d-none" role="status"></span>
+                                        </button>
+                                    </div>
+                                </form>
+                                <p class="text-muted mt-2" style="font-size:0.8rem;">Use your OpenVPN/IKEv2 credentials from account.proton.me/vpn/open-vpn-ike-v2</p>
+                                <div class="alert alert-danger mt-3 d-none proton-error"></div>
+                                <div class="alert alert-success mt-3 d-none proton-success"></div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Theme toggle functionality
+        // Theme toggle
         const themeToggle = document.getElementById('themeToggle');
         const lightIcon = document.getElementById('lightIcon');
         const darkIcon = document.getElementById('darkIcon');
         const body = document.body;
-
         const savedTheme = localStorage.getItem('theme') || 'dark';
-        if (savedTheme === 'dark') {
-            body.classList.remove('light-mode');
-            body.classList.add('dark-mode');
-            lightIcon.style.display = 'none';
-            darkIcon.style.display = 'block';
-        } else {
-            body.classList.remove('dark-mode');
-            body.classList.add('light-mode');
+        if (savedTheme === 'light') {
+            body.classList.replace('dark-mode', 'light-mode');
             lightIcon.style.display = 'block';
             darkIcon.style.display = 'none';
         }
-
         themeToggle.addEventListener('click', function() {
             if (body.classList.contains('light-mode')) {
-                body.classList.remove('light-mode');
-                body.classList.add('dark-mode');
+                body.classList.replace('light-mode', 'dark-mode');
                 lightIcon.style.display = 'none';
                 darkIcon.style.display = 'block';
                 localStorage.setItem('theme', 'dark');
             } else {
-                body.classList.remove('dark-mode');
-                body.classList.add('light-mode');
+                body.classList.replace('dark-mode', 'light-mode');
                 lightIcon.style.display = 'block';
                 darkIcon.style.display = 'none';
                 localStorage.setItem('theme', 'light');
             }
         });
 
-        document.getElementById('donateBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            window.open('https://www.paypal.com/donate/?hosted_button_id=PRQ23Y8DHEF2C', '_blank');
-        });
-
-        const helpDetails = document.getElementById('helpDetails');
-        const helpArrow = document.getElementById('helpArrow');
-        if (helpDetails && helpArrow) {
-            helpDetails.addEventListener('show.bs.collapse', function() {
-                helpArrow.textContent = '▲';
+        // Load PIA regions
+        fetch('/pia/regions')
+            .then(r => r.json())
+            .then(regions => {
+                const sel = document.getElementById('piaRegion');
+                sel.innerHTML = '<option value="">Select a region...</option>';
+                regions.forEach(r => {
+                    const o = document.createElement('option');
+                    o.value = r; o.textContent = r;
+                    sel.appendChild(o);
+                });
+            }).catch(() => {
+                document.getElementById('piaRegion').innerHTML = '<option value="">Error loading regions</option>';
             });
-            helpDetails.addEventListener('hide.bs.collapse', function() {
-                helpArrow.textContent = '▼';
+
+        // Load ProtonVPN servers
+        fetch('/proton/regions')
+            .then(r => r.json())
+            .then(servers => {
+                const sel = document.getElementById('protonServer');
+                sel.innerHTML = '<option value="">Select a server...</option>';
+                servers.forEach(s => {
+                    const o = document.createElement('option');
+                    o.value = s; o.textContent = s;
+                    sel.appendChild(o);
+                });
+            }).catch(() => {
+                document.getElementById('protonServer').innerHTML = '<option value="">Error loading servers</option>';
+            });
+
+        // Generic form handler
+        function handleForm(formId, endpoint, errorClass, successClass) {
+            document.getElementById(formId).addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = this.querySelector('button[type=submit]');
+                const btnText = btn.querySelector('.btn-text');
+                const spinner = btn.querySelector('.spinner');
+                const errorDiv = document.querySelector('.' + errorClass);
+                const successDiv = document.querySelector('.' + successClass);
+
+                errorDiv.classList.add('d-none');
+                successDiv.classList.add('d-none');
+                btn.disabled = true;
+                btnText.textContent = 'Generating...';
+                spinner.classList.remove('d-none');
+
+                fetch(endpoint, { method: 'POST', body: new FormData(this) })
+                    .then(response => {
+                        if (response.ok) {
+                            const cd = response.headers.get('Content-Disposition');
+                            const match = cd && cd.match(/filename="?(.+?)"?$/);
+                            const filename = match ? match[1] : 'vpn-config.ovpn';
+                            return response.blob().then(blob => ({ blob, filename }));
+                        } else {
+                            return response.json().then(d => Promise.reject(d.error));
+                        }
+                    })
+                    .then(({ blob, filename }) => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = filename;
+                        document.body.appendChild(a); a.click();
+                        URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        successDiv.textContent = 'Config downloaded successfully!';
+                        successDiv.classList.remove('d-none');
+                    })
+                    .catch(err => {
+                        errorDiv.textContent = err || 'An error occurred';
+                        errorDiv.classList.remove('d-none');
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btnText.textContent = 'Generate Config';
+                        spinner.classList.add('d-none');
+                    });
             });
         }
 
-        fetch('/regions')
-            .then(response => response.json())
-            .then(regions => {
-                const select = document.getElementById('region');
-                select.innerHTML = '<option value="">Select a region...</option>';
-                regions.forEach(region => {
-                    const option = document.createElement('option');
-                    option.value = region;
-                    option.textContent = region;
-                    select.appendChild(option);
-                });
-            })
-            .catch(error => {
-                document.getElementById('region').innerHTML = '<option value="">Error loading regions</option>';
-            });
-
-        document.getElementById('configForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const btn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const spinner = document.getElementById('spinner');
-            const errorDiv = document.getElementById('error');
-            const successDiv = document.getElementById('success');
-            
-            errorDiv.classList.add('d-none');
-            successDiv.classList.add('d-none');
-            
-            btn.disabled = true;
-            btnText.textContent = 'Generating...';
-            spinner.classList.remove('d-none');
-            
-            const formData = new FormData(this);
-            
-            fetch('/generate', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (response.ok) {
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    const filenameMatch = contentDisposition && contentDisposition.match(/filename="?(.+?)"?$/);
-                    const filename = filenameMatch ? filenameMatch[1] : 'PIA-config';
-
-                    return response.blob().then(blob => ({ blob, filename }));
-                } else {
-                    return response.json().then(data => Promise.reject(data.error));
-                }
-            })
-            .then(({ blob, filename }) => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-
-                successDiv.textContent = 'Config generated and downloaded successfully!';
-                successDiv.classList.remove('d-none');
-            })
-            .catch(error => {
-                errorDiv.textContent = error || 'An error occurred while generating the config';
-                errorDiv.classList.remove('d-none');
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btnText.textContent = 'Generate Config';
-                spinner.classList.add('d-none');
-            });
-        });
+        handleForm('piaForm', '/pia/generate', 'pia-error', 'pia-success');
+        handleForm('protonForm', '/proton/generate', 'proton-error', 'proton-success');
     </script>
 </body>
 </html>
