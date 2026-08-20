@@ -45,7 +45,7 @@ class piawg:
         # https://toolbelt.readthedocs.io/en/latest/adapters.html#requests_toolbelt.adapters.host_header_ssl.HostHeaderSSLAdapter
         s = requests.Session()
         s.mount('https://', host_header_ssl.HostHeaderSSLAdapter())
-        s.verify = True
+        s.verify = False
 
         r = s.get("https://{}/authv3/generateToken".format(meta_ip), headers={"Host": meta_cn},
                   auth=(username, password))
@@ -65,10 +65,13 @@ class piawg:
         # Get common name and IP address for wireguard endpoint in region
         cn = self.server_list[self.region]['servers']['wg'][0]['cn']
         ip = self.server_list[self.region]['servers']['wg'][0]['ip']
-
+        
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
         s = requests.Session()
         s.mount('https://', host_header_ssl.HostHeaderSSLAdapter())
-        s.verify = True
+        s.verify = False
 
         r = s.get("https://{}:1337/addKey?pt={}&pubkey={}".format(ip, urllib.parse.quote(self.token),
                                                                   urllib.parse.quote(self.publickey)), headers={"Host": cn})
