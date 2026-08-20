@@ -69,7 +69,6 @@ class piawg:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         s = requests.Session()
-        s.mount('https://', host_header_ssl.HostHeaderSSLAdapter())
         s.verify = False
 
         r = s.get("https://{}:1337/addKey?pt={}&pubkey={}".format(ip, urllib.parse.quote(self.token),
