@@ -7,7 +7,5 @@ COPY requirements.txt /app/
 RUN python3 -m venv venv \
  && ./venv/bin/pip install --no-cache-dir -r requirements.txt
 COPY . /app
-# Fetch ProtonVPN server list at build time
-RUN ./venv/bin/python fetch_proton_servers.py || true
 EXPOSE 80
 ENTRYPOINT ["/app/venv/bin/supervisord", "-c", "/app/supervisord.conf"]
