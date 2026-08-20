@@ -25,7 +25,7 @@ def fetch_servers():
 
     servers = []
     for server in data.get("LogicalServers", []):
-        if server.get("Status", 0) != 1:
+        if server.get("Status", 0) != 1 or server.get("Tier", 0) != 0:
             continue
         for physical in server.get("Servers", []):
             entry_ip = physical.get("EntryIP")
