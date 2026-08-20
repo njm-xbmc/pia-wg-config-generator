@@ -68,7 +68,7 @@ class piawg:
 
         s = requests.Session()
         s.mount('https://', host_header_ssl.HostHeaderSSLAdapter())
-        s.verify = 'ca.rsa.4096.crt'
+        s.verify = '/app/ca.rsa.4096.crt'
 
         r = s.get("https://{}:1337/addKey?pt={}&pubkey={}".format(ip, urllib.parse.quote(self.token),
                                                                   urllib.parse.quote(self.publickey)), headers={"Host": cn})
