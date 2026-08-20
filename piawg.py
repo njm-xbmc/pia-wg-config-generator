@@ -1,18 +1,11 @@
 import requests
 import json
-from requests_toolbelt.adapters import host_header_ssl
 import urllib3
 import subprocess
 import urllib.parse
 
-# PIA uses the CN attribute for certificates they issue themselves.
-# In newer versions of urllib3, SubjectAltNameWarning was removed, so we disable all warnings
-# or specifically NotOpenSSLWarning if it exists
-try:
-    urllib3.disable_warnings(urllib3.exceptions.SubjectAltNameWarning)
-except AttributeError:
-    # SubjectAltNameWarning doesn't exist in urllib3 2.x, use general warning suppression
-    urllib3.disable_warnings()
+# Disable SSL warnings
+urllib3.disable_warnings()
 
 
 class piawg:
@@ -41,10 +34,7 @@ class piawg:
         meta_cn = self.server_list[self.region]['servers']['meta'][0]['cn']
         meta_ip = self.server_list[self.region]['servers']['meta'][0]['ip']
 
-        # Some tricks to verify PIA certificate, even though we're sending requests to an IP and not a proper domain
-        # https://toolbelt.readthedocs.io/en/latest/adapters.html#requests_toolbelt.adapters.host_header_ssl.HostHeaderSSLAdapter
         s = requests.Session()
-        s.mount('https://', host_header_ssl.HostHeaderSSLAdapter())
         s.verify = False
 
         r = s.get("https://{}/authv3/generateToken".format(meta_ip), headers={"Host": meta_cn},
@@ -65,9 +55,7 @@ class piawg:
         # Get common name and IP address for wireguard endpoint in region
         cn = self.server_list[self.region]['servers']['wg'][0]['cn']
         ip = self.server_list[self.region]['servers']['wg'][0]['ip']
-        
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
         s = requests.Session()
         s.verify = False
 
