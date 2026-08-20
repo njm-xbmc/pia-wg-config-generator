@@ -1,8 +1,6 @@
 """
-ProtonVPN config generator module
+ProtonVPN config generator module - hardcoded NL free servers
 """
-import json
-import os
 
 PROTON_CA = """-----BEGIN CERTIFICATE-----
 MIIFnTCCA4WgAwIBAgIUCI574SM3Lyh47GyNl0WAOYrqb5QwDQYJKoZIhvcNAQEL
@@ -57,26 +55,42 @@ aeb893d9a96d1f15519bb3c4dcb40ee3
 16672ea16c012664f8a9f11255518deb
 -----END OpenVPN Static key V1-----"""
 
-
-def load_servers():
-    path = "/app/proton_servers.json"
-    if not os.path.exists(path):
-        return []
-    with open(path) as f:
-        data = json.load(f)
-    return data.get("servers", [])
+# NL free servers - verified IPs from downloaded configs
+# Updated: 2026-08-20
+NL_FREE_SERVERS = [
+    {"name": "NL-FREE#2",   "ip": "149.36.51.3"},
+    {"name": "NL-FREE#150", "ip": "185.107.56.219"},
+    {"name": "NL-FREE#160", "ip": "185.107.56.162"},
+    {"name": "NL-FREE#162", "ip": "185.107.56.130"},
+    {"name": "NL-FREE#164", "ip": "185.107.80.36"},
+    {"name": "NL-FREE#209", "ip": "185.184.195.132"},
+    {"name": "NL-FREE#210", "ip": "185.132.176.124"},
+    {"name": "NL-FREE#211", "ip": "185.184.192.237"},
+    {"name": "NL-FREE#227", "ip": "190.2.149.68"},
+    {"name": "NL-FREE#228", "ip": "80.79.6.83"},
+    {"name": "NL-FREE#229", "ip": "80.79.7.101"},
+    {"name": "NL-FREE#230", "ip": "185.182.194.227"},
+    {"name": "NL-FREE#231", "ip": "190.2.149.217"},
+    {"name": "NL-FREE#233", "ip": "190.2.148.229"},
+    {"name": "NL-FREE#237", "ip": "190.2.149.6"},
+    {"name": "NL-FREE#243", "ip": "185.185.50.91"},
+    {"name": "NL-FREE#248", "ip": "190.2.151.14"},
+    {"name": "NL-FREE#249", "ip": "45.82.64.229"},
+    {"name": "NL-FREE#255", "ip": "175.110.113.31"},
+    {"name": "NL-FREE#278", "ip": "89.105.214.194"},
+    {"name": "NL-FREE#282", "ip": "89.105.214.198"},
+    {"name": "NL-FREE#286", "ip": "89.105.214.202"},
+]
 
 
 def get_server_list():
-    servers = load_servers()
-    return sorted(set(s["name"] for s in servers))
+    return [s["name"] for s in NL_FREE_SERVERS]
 
 
 def get_server_ip(server_name):
-    servers = load_servers()
-    for s in servers:
+    for s in NL_FREE_SERVERS:
         if s["name"] == server_name:
-            return s["entry_ip"]
+            return s["ip"]
     return None
 
 
