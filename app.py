@@ -4,7 +4,7 @@ import os
 import logging
 import urllib3
 from piawg import piawg
-from protonvpn import generate_config as proton_generate, get_server_list as proton_server_list
+from protonvpn import generate_config as generate_proton_config, get_server_list as proton_server_list
 
 urllib3.disable_warnings()
 
@@ -248,7 +248,7 @@ def proton_generate():
 
         logger.info(f"Generating ProtonVPN {protocol.upper()} config for server: {server}")
 
-        config_content, error = proton_generate(server, protocol, username, password)
+        config_content, error = generate_proton_config(server, protocol, username, password)
         if error:
             return jsonify({'error': error}), 500
 
